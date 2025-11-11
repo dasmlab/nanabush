@@ -1,0 +1,47 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: vllm-retrain-pipeline
+  annotations:
+    glooscap.dasmlab.org/component: vllm
+    glooscap.dasmlab.org/purpose: continual-learning
+spec:
+  params:
+    - name: model-image
+      type: string
+    - name: sanitized-dataset
+      type: string
+    - name: output-registry
+      type: string
+  tasks:
+    - name: fetch-dataset
+      taskRef:
+        name: dataset-fetch-task
+      params:
+        - name: source
+          value: $(params.sanitized-dataset)
+    - name: fine-tune-model
+      runAfter:
+        - fetch-dataset
+      taskRef:
+        name: vllm-finetune-task
+      params:
+        - name: base-image
+          value: $(params.model-image)
+    - name: package-model
+      runAfter:
+        - fine-tune-model
+      taskRef:
+        name: model-package-task
+      params:
+        - name: output-registry
+          value: $(params.output-registry)
+    - name: notify-operator
+      runAfter:
+        - package-model
+      taskRef:
+        name: notif-task
+      params:
+        - name: message
+          value: 'New vLLM model pushed to $(params.output-registry)'
+

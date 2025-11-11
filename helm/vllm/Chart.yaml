@@ -1,0 +1,9 @@
+apiVersion: v2
+name: vllm
+description: GPU-backed vLLM deployment for Glooscap translations
+type: application
+version: 0.1.0
+appVersion: "0.0.1"
+annotations:
+  glooscap.dasmlab.org/component: vllm
+

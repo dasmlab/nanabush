@@ -1,0 +1,74 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: translation-pipeline
+  annotations:
+    glooscap.dasmlab.org/component: vllm
+    glooscap.dasmlab.org/purpose: outline-translation
+spec:
+  params:
+    - name: job-id
+      type: string
+    - name: source-blob
+      type: string
+    - name: destination-target
+      type: string
+    - name: language-tag
+      type: string
+      default: fr-CA
+    - name: pipeline-mode
+      type: string
+      default: TektonJob
+  workspaces:
+    - name: ephemeral-data
+      optional: false
+      description: Memory-backed workspace to avoid data at rest
+  tasks:
+    - name: fetch-content
+      taskRef:
+        name: outline-fetch-task
+      params:
+        - name: job-id
+          value: $(params.job-id)
+        - name: source-blob
+          value: $(params.source-blob)
+      workspaces:
+        - name: workspace
+          workspace: ephemeral-data
+    - name: run-inference
+      runAfter:
+        - fetch-content
+      taskRef:
+        name: vllm-inference-task
+      params:
+        - name: job-id
+          value: $(params.job-id)
+        - name: language-tag
+          value: $(params.language-tag)
+      workspaces:
+        - name: workspace
+          workspace: ephemeral-data
+    - name: publish-result
+      runAfter:
+        - run-inference
+      taskRef:
+        name: outline-publish-task
+      params:
+        - name: job-id
+          value: $(params.job-id)
+        - name: destination-target
+          value: $(params.destination-target)
+      workspaces:
+        - name: workspace
+          workspace: ephemeral-data
+    - name: audit-log
+      runAfter:
+        - publish-result
+      taskRef:
+        name: audit-trail-task
+      params:
+        - name: job-id
+          value: $(params.job-id)
+        - name: pipeline-mode
+          value: $(params.pipeline-mode)
+

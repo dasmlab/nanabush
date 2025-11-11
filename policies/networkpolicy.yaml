@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: nanabush-egress-zerotrust
+  namespace: nanabush
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              glooscap.dasmlab.org/trusted: "true"
+      ports:
+        - port: 8080
+          protocol: TCP
+

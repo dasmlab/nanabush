@@ -25,5 +25,18 @@ This directory houses the artefacts for deploying, operating, and evolving the i
 4. Document retraining strategy and approval gates in `docs/`.
 5. Integrate cluster monitoring (Prometheus, Grafana) and alerting for GPU utilisation.
 
+### Quick Start
+
+```bash
+# package the Helm chart
+./scripts/buildme.sh
+
+# deploy into nanabush namespace
+./scripts/deployme.sh nanabush
+
+# rebuild + redeploy and reapply Tekton scaffolding
+./scripts/cycleme.sh nanabush
+```
+
 Refer back to `tools/glooscap/docs/vllm-integration.md` for operator integration details.
 

@@ -1,0 +1,35 @@
+image:
+  repository: registry.redhat.io/rhoai/vllm
+  tag: latest
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  create: true
+  name: ""
+
+resources:
+  limits:
+    cpu: "4"
+    memory: 16Gi
+    nvidia.com/gpu: 1
+  requests:
+    cpu: "2"
+    memory: 8Gi
+    nvidia.com/gpu: 1
+
+service:
+  type: ClusterIP
+  port: 8000
+
+otel:
+  endpoint: otel-collector.glooscap.svc:4317
+
+security:
+  runtimeClassName: kata
+  networkPolicyEgress:
+    - 10.0.0.0/8
+    - 172.16.0.0/12
+  allowlistServices:
+    - wiki.infra.dasmlab.org
+    - glooscap-operator.glooscap.svc
+
