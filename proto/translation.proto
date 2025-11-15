@@ -8,6 +8,16 @@ option go_package = "github.com/dasmlab/glooscap-operator/pkg/nanabush/proto/v1;
 
 // TranslationService provides translation capabilities via vLLM backend.
 service TranslationService {
+  // RegisterClient registers a new client with the server.
+  // This should be called immediately after establishing a connection.
+  // Returns a client_id that should be used for subsequent heartbeats.
+  rpc RegisterClient(RegisterClientRequest) returns (RegisterClientResponse);
+  
+  // Heartbeat sends a keepalive and re-authentication signal from the client.
+  // Should be called periodically (recommended: every 30-60 seconds).
+  // If the socket is torn down, the client should re-register.
+  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
+  
   // CheckTitle performs a lightweight pre-flight check with title only.
   // This validates that Nanabush is ready and can handle the request.
   rpc CheckTitle(TitleCheckRequest) returns (TitleCheckResponse);
@@ -98,5 +108,40 @@ message TranslateChunk {
   bool is_final = 3;
   string content = 4;
   string error_message = 5;
+}
+
+// RegisterClientRequest registers a client with the server.
+message RegisterClientRequest {
+  string client_name = 1;           // Name/identifier of the client (e.g., "glooscap")
+  string client_version = 2;        // Version of the client
+  string namespace = 3;             // Kubernetes namespace (optional)
+  map<string, string> metadata = 4; // Additional client metadata
+  google.protobuf.Timestamp registered_at = 5;
+}
+
+// RegisterClientResponse confirms client registration.
+message RegisterClientResponse {
+  string client_id = 1;              // Unique client ID assigned by server
+  bool success = 2;
+  string message = 3;
+  int32 heartbeat_interval_seconds = 4; // Recommended heartbeat interval
+  google.protobuf.Timestamp expires_at = 5; // When registration expires (if applicable)
+}
+
+// HeartbeatRequest sends a keepalive signal from the client.
+message HeartbeatRequest {
+  string client_id = 1;              // Client ID from RegisterClientResponse
+  string client_name = 2;            // Client name (for validation)
+  google.protobuf.Timestamp sent_at = 3;
+  map<string, string> metadata = 4;  // Optional status/metadata
+}
+
+// HeartbeatResponse confirms heartbeat receipt.
+message HeartbeatResponse {
+  bool success = 1;
+  string message = 2;
+  google.protobuf.Timestamp received_at = 3;
+  int32 heartbeat_interval_seconds = 4; // Recommended next heartbeat interval
+  bool re_register_required = 5;     // If true, client should re-register
 }
 
