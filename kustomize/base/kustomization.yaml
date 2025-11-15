@@ -6,4 +6,11 @@ resources:
   - serviceaccount.yaml
   - role.yaml
   - rolebinding.yaml
+      - grpc-server-deployment.yaml
+      - grpc-server-service.yaml
+      # Removed grpc-server-route.yaml - using LoadBalancer with MetalLB for direct TCP/HTTP/2 access
+      - grpc-server-networkpolicy.yaml
+      # MetalLB configuration
+      - metallb-ippool.yaml
+      - metallb-l2advertisement.yaml
 

@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nanabush-grpc-server
+  namespace: nanabush
+  labels:
+    app: nanabush-grpc-server
+    component: grpc-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nanabush-grpc-server
+  template:
+    metadata:
+      labels:
+        app: nanabush-grpc-server
+        component: grpc-server
+      annotations:
+        instrumentation.opentelemetry.io/inject-sdk: "true"
+        instrumentation.opentelemetry.io/endpoint: "otel-collector.glooscap.svc:4317"
+    spec:
+      serviceAccountName: nanabush-controller
+      imagePullSecrets:
+        - name: dasmlab-ghcr-pull
+      containers:
+        - name: grpc-server
+          # Image from GitHub Container Registry
+          image: ghcr.io/dasmlab/nanabush-grpc-server:latest
+          imagePullPolicy: Always
+          command: ["/app/nanabush-grpc-server"]
+          args:
+            - "-port"
+            - "50051"
+            - "-insecure"
+          ports:
+            - name: grpc
+              containerPort: 50051
+              protocol: TCP
+          env:
+            - name: NANABUSH_BACKEND_URL
+              value: "http://vllm.nanabush.svc:8000"
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "32Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            grpc:
+              port: 50051
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            grpc:
+              port: 50051
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            # runAsUser not specified - OpenShift will assign UID automatically from SCC
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+      # nodeSelector - ONLY node labels, NOT toleration keys!
+      # Removed nodeSelector entirely for single node cluster
+      # If needed, use valid node labels like:
+      # nodeSelector:
+      #   kubernetes.io/os: linux
+      #   
+      # Tolerations go in tolerations: section, NOT nodeSelector!
+      tolerations:
+        - key: "node.kubernetes.io/memory-pressure"
+          operator: "Exists"
+          effect: "NoSchedule"
+        - key: "node.kubernetes.io/not-ready"
+          operator: "Exists"
+          effect: "NoExecute"
+          tolerationSeconds: 300
+        - key: "node.kubernetes.io/unreachable"
+          operator: "Exists"
+          effect: "NoExecute"
+          tolerationSeconds: 300

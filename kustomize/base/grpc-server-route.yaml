@@ -1,0 +1,20 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: grpc-nanabush
+  namespace: nanabush
+  labels:
+    app: nanabush-grpc-server
+    component: grpc-server
+spec:
+  host: grpc-nanabush.apps.ocp-sno-1050ti.rh.dasmlab.org
+  to:
+    kind: Service
+    name: nanabush-grpc-server
+    weight: 100
+  port:
+    targetPort: grpc
+  tls:
+    termination: passthrough  # Pass through TLS for gRPC/HTTP/2 without L7 termination
+  wildcardPolicy: None
+
