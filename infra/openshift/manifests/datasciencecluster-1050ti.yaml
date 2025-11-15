@@ -1,0 +1,93 @@
+apiVersion: datasciencecluster.opendatahub.io/v1
+kind: DataScienceCluster
+metadata:
+  name: default-dsc
+  labels:
+    app.kubernetes.io/created-by: rhods-operator
+    app.kubernetes.io/instance: default-dsc
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: datasciencecluster
+    app.kubernetes.io/part-of: rhods-operator
+spec:
+  components:
+    # Core Components - Essential for nanabush/glooscap workflows
+    workbenches:
+      managementState: Managed
+      # Jupyter workbenches for model development and testing
+      # Used by data scientists to develop/test translation models
+    
+    dashboard:
+      managementState: Managed
+      # RHOAI Dashboard UI for managing workbenches and models
+      # Essential for easy management of AI/ML workloads
+    
+    # Model Serving - Critical for vLLM integration (nanabush)
+    kserve:
+      managementState: Managed
+      # KServe for model serving - will handle vLLM inference endpoints
+      # GPU support via NVIDIA Inference Microservices (NIM)
+      serving:
+        # Knative-based serving infrastructure
+        managementState: Managed
+        name: knative-serving
+        ingressGateway:
+          certificate:
+            type: OpenshiftDefaultIngress
+      nim:
+        managementState: Managed
+        # NVIDIA Inference Microservices - optimized GPU inference
+        # Essential for GPU-backed model serving
+    
+    # Model Management
+    modelregistry:
+      managementState: Managed
+      # Model registry for versioning and tracking models
+      # Stores metadata about translation models
+      registriesNamespace: rhoai-model-registries
+    
+    # Job Management
+    kueue:
+      managementState: Managed
+      # Kubernetes-native job queue for ML workloads
+      # Manages translation job queues (glooscap integration)
+    
+    # Optional but useful for explainability
+    trustyai:
+      managementState: Managed
+      # TrustyAI for model explainability and bias detection
+      # Useful for translation model validation
+    
+    # Resource-intensive components - Disabled for single-node cluster
+    datasciencepipelines:
+      managementState: Removed
+      # Kubeflow Pipelines - too resource-intensive for 1050Ti
+      # Can enable later if needed for complex workflows
+    
+    trainingoperator:
+      managementState: Removed
+      # Training Operator - limited benefit on single-node
+      # Distributed training needs multiple nodes
+    
+    codeflare:
+      managementState: Removed
+      # CodeFlare - not needed for single-node cluster
+    
+    ray:
+      managementState: Removed
+      # Ray framework - optional, skip for minimal setup
+      # Can enable later if needed for parallel processing
+    
+    modelmeshserving:
+      managementState: Removed
+      # Model Mesh - legacy serving framework
+      # Using KServe instead
+    
+    # Deprecated/Removed components
+    feastoperator:
+      managementState: Removed
+      # Feast feature store - removed in default config
+    
+    llamastackoperator:
+      managementState: Removed
+      # LLamaStack operator - removed in default config
+

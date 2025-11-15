@@ -1,0 +1,102 @@
+syntax = "proto3";
+
+package nanabush.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/dasmlab/glooscap-operator/pkg/nanabush/proto/v1;nanabushv1";
+
+// TranslationService provides translation capabilities via vLLM backend.
+service TranslationService {
+  // CheckTitle performs a lightweight pre-flight check with title only.
+  // This validates that Nanabush is ready and can handle the request.
+  rpc CheckTitle(TitleCheckRequest) returns (TitleCheckResponse);
+  
+  // Translate performs full document translation.
+  // This is the main translation endpoint that processes complete documents.
+  rpc Translate(TranslateRequest) returns (TranslateResponse);
+  
+  // TranslateStream supports streaming for large documents.
+  // Client sends chunks, server responds with translated chunks.
+  rpc TranslateStream(stream TranslateChunk) returns (stream TranslateChunk);
+}
+
+// PrimitiveType indicates what type of translation is being requested.
+enum PrimitiveType {
+  PRIMITIVE_UNSPECIFIED = 0;
+  PRIMITIVE_TITLE = 1;        // Title-only translation
+  PRIMITIVE_DOC_TRANSLATE = 2; // Full document translation
+}
+
+// TitleCheckRequest is used for pre-flight validation.
+message TitleCheckRequest {
+  string title = 1;
+  string language_tag = 2;      // Target language (e.g., "fr-CA")
+  string source_language = 3;    // Source language (e.g., "EN")
+}
+
+// TitleCheckResponse indicates if Nanabush is ready to handle the request.
+message TitleCheckResponse {
+  bool ready = 1;
+  string message = 2;
+  int32 estimated_time_seconds = 3;
+}
+
+// TranslateRequest contains the full translation request.
+message TranslateRequest {
+  // Job identification
+  string job_id = 1;
+  string namespace = 2;
+  
+  // Primitive type
+  PrimitiveType primitive = 3;
+  
+  // Source content - oneof ensures only one is set
+  oneof source {
+    string title = 4;           // For PRIMITIVE_TITLE
+    DocumentContent doc = 5;    // For PRIMITIVE_DOC_TRANSLATE
+  }
+  
+  // Template helper (optional) - provides context about document structure
+  DocumentContent template_helper = 6;
+  
+  // Translation parameters
+  string source_language = 7;   // e.g., "EN"
+  string target_language = 8;   // e.g., "fr-CA" (BCP 47)
+  
+  // Metadata
+  string source_wiki_uri = 9;
+  string page_id = 10;
+  string page_slug = 11;
+  google.protobuf.Timestamp requested_at = 12;
+}
+
+// DocumentContent represents a document's content and metadata.
+message DocumentContent {
+  string title = 1;
+  string markdown = 2;
+  string slug = 3;
+  map<string, string> metadata = 4;  // Collection, template, etc.
+}
+
+// TranslateResponse contains the translation result.
+message TranslateResponse {
+  string job_id = 1;
+  bool success = 2;
+  string translated_title = 3;
+  string translated_markdown = 4;
+  string error_message = 5;
+  google.protobuf.Timestamp completed_at = 6;
+  int32 tokens_used = 7;
+  double inference_time_seconds = 8;
+}
+
+// TranslateChunk is used for streaming translation of large documents.
+message TranslateChunk {
+  string job_id = 1;
+  int32 chunk_index = 2;
+  bool is_final = 3;
+  string content = 4;
+  string error_message = 5;
+}
+
